@@ -1,4 +1,4 @@
-# AssemblyStyleTransfer
+# AssemblyFunctionExtraction
 
 ## Setup
 
