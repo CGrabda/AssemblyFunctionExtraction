@@ -11,11 +11,13 @@ pip install r2pipe lief pefile capstone
 
 ## Usage
 
+Basic
 ```console
 conda activate {ENV}
 python main.py
 ```
 
+Get help
 ```console
 conda activate {ENV}
 python main.py --help
