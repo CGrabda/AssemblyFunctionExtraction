@@ -29,6 +29,7 @@ import pefile as pe
 from pprint import pprint
 from random import shuffle
 import re
+import r2pipe
 import shutil
 import signal
 import subprocess
@@ -36,38 +37,13 @@ import sys
 import time
 import typing as tp
 import warnings
-import zlib
-
-try:
-    from tqdm import tqdm
-except ImportError:
-
-    def tqdm(iterable, *args, **kwargs):
-        return iterable
 
 
-import r2pipe
-
-from src import cfg
-from src.tokenization import get_pre_normalizer
-from src.output_manager import OutputManager
-
-
-N_FILES = 25
-MAX_LEN = 1e6
-_16_BIT = False
-_32_BIT = True
-_64_BIT = False
-WAIT = 5
-
+UPX = None  # "path/to/upx/if/you/have/it"
 WARNS = [
     ("Functions with same addresses detected", False),
     ("Function addresses improperly parsed", False),
 ]
-
-CHUNK = 1024
-NORMALIZER = get_pre_normalizer()
-ALREADY_DONE = set()
 
 
 class PDRParser:
@@ -170,10 +146,10 @@ def disassemble(f: Path, dest_path: Path) -> list[Path]:
 def filter_(
     f: Path,
     dest_path: Path,
-    max_len: int = MAX_LEN,
-    _16_bit: bool = _16_BIT,
-    _32_bit: bool = _32_BIT,
-    _64_bit: bool = _64_BIT,
+    max_len: int = int(1e6),
+    _16_bit: bool = False,
+    _32_bit: bool = True,
+    _64_bit: bool = False
 ) -> tuple[Path, int]:
     def ret(keep: bool):
         f_out = dest_path / f.name
@@ -205,7 +181,9 @@ def filter_(
 
 def unpack(f: Path, dest_path: Path) -> Path:
     f_out = dest_path / f.name
-    command = [cfg.UPX, "-d", f"{f.as_posix()}", "-o", f"{f_out.as_posix()}"]
+    if UPX is None:
+        return f_out
+    command = [UPX, "-d", f"{f.as_posix()}", "-o", f"{f_out.as_posix()}"]
     result = subprocess.run(
         command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False
     )
