@@ -1,15 +1,5 @@
 """
-Acquire data for learning, including downloading and disassembling (Network-intensive & CPU intensive).
-
-This script is a little complicated. It is intended to be run using stupid parallelization:
-    - One worker should be responsible for downloading, eg,
-        python prepare.py --_32_bit --responsibility=None
-    - Subsequent workers should be responsible for disassembling select files that begin with `responsibility`
-        python prepare.py --_32_bit --no_download --responsibility=000
-        python prepare.py --_32_bit --no_download --responsibility=001
-        python prepare.py --_32_bit --no_download --responsibility=002
-        ...
-        python prepare.py --_32_bit --no_download --responsibility=00f
+Extract functions from binaries.
 """
 
 from __future__ import annotations
@@ -29,7 +19,6 @@ import pefile as pe
 from pprint import pprint
 from random import shuffle
 import re
-import r2pipe
 import shutil
 import signal
 import subprocess
@@ -37,6 +26,8 @@ import sys
 import time
 import typing as tp
 import warnings
+
+import r2pipe
 
 
 UPX = None  # "path/to/upx/if/you/have/it"
