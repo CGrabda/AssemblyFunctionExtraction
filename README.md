@@ -9,6 +9,18 @@ conda activate {ENV}
 pip install r2pipe lief pefile capstone
 ```
 
+## Usage
+
+```console
+conda activate {ENV}
+python main.py
+```
+
+```console
+conda activate {ENV}
+python main.py --help
+```
+
 ## Tools
 
 1. [redare2-r2pipe](https://github.com/radareorg/radare2-r2pipe/tree/master)
