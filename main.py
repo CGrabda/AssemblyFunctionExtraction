@@ -187,14 +187,20 @@ def unpack(f: Path, dest_path: Path) -> Path:
     return f_out
 
 
-def main() -> None:
+def main(f: Path) -> None:
     wd = Path(".")
-    f = Path("fooBar.exe")
     f = unpack(f, wd)
     r = filter_(f)[1]
     if r != 0:
         sys.exit(r)
     f = disassemble(f, wd)
+
+
+def cli() -> None:
+    parser = ArgumentParser()
+    parser.add_argument("--file", type=Path)
+    args = parser.parse_args()
+    main(args.file)
 
 
 if __name__ == "__main__":
