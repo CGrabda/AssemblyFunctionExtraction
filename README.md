@@ -28,3 +28,8 @@ python main.py --help
 - [LIEF](https://lief-project.github.io/doc/latest/index.html)
 - [pefile](https://github.com/erocarrera/pefile)
 
+
+## Resources
+
+- [r2book](https://book.rada.re/disassembling/intro.html)
+- [r2disassembleCheatSheet](https://r2wiki.readthedocs.io/en/latest/home/misc/cheatsheet/)
