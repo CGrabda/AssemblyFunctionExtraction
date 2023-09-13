@@ -13,13 +13,11 @@ pip install r2pipe lief pefile capstone
 
 Basic
 ```console
-conda activate {ENV}
 python main.py --file="./foo.exe"
 ```
 
 Get help
 ```console
-conda activate {ENV}
 python main.py --help
 ```
 
