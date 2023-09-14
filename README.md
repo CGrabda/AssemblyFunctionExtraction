@@ -11,14 +11,34 @@ pip install r2pipe lief pefile capstone
 
 ## Usage
 
-Basic
+### Disassembly pipeline
+
 ```console
-python main.py --file="./foo.exe"
+python pipeline.py --file_or_dir="file.exe"
 ```
 
-Get help
 ```console
-python main.py --help
+python pipeline.py --file_or_dir="directory"         
+```
+
+```console
+python pipeline.py --help         
+```
+
+### Virtual-physical address map
+
+```console
+python address.py --build --merge
+```
+
+```console
+python address.py --help
+```
+
+### Program does not work lol
+
+```console
+python example.py        
 ```
 
 ## Tools
