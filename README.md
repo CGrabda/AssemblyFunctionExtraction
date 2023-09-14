@@ -6,7 +6,7 @@ Install dependencies, e.g., using a conda environment named {ENV} & pip
 ```console
 conda create --name {ENV} python=3.10
 conda activate {ENV}
-pip install r2pipe lief pefile capstone
+pip install r2pipe lief pefile capstone tokenizers
 ```
 
 ## Usage
