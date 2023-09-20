@@ -46,8 +46,10 @@ python example.py
 The goal is to extract disassembled functions from PE executables. We'll want a pure function that takes a file as input and returns disassembled functions, along with their locations in the binary, e.g.,
 
 ```python
-
+from argparse import ArgumentParser
 from dataclasses import dataclass
+from multiprocessing import Pool
+from pathlib import Path
 
 
 @dataclass(frozen=True)
@@ -73,6 +75,32 @@ def extract_functions_from_binary(file: Path) -> list[Function]:
         information about each function in the file
     """
     ...
+
+
+def main() -> None:
+    parser = ArgumentParser()
+    parser.add_argument("--file", required=False, type=Path, help="File to disassemble.")
+    parser.add_argument("--files", required=False, type=Path,
+        help="Either a file containing a list of files or a directory containing files to disassemble.")
+    parser.add_argument("--num_workers", default=8, type=int, help="Degree of parallelization.")
+    args = parser.parse_args()
+
+    if args.file is not None and args.files is None:
+        files = [args.file]
+    elif args.files is not None and args.file is None:
+        if args.files.is_dir():
+            files = list(args.files.iterdir())
+        else:
+            files = args.files.read_text().split("\n")
+    else:
+        raise ValueError("Specify --file or --files, not both.")
+
+    with Pool(args.num_workers) as pool:
+        pool.map(extract_functions_from_binary, files)
+
+
+if __name__ == "__main__":
+    main()        
 ```
 
 Eventually, we'll want to parallelize this, so a pure function is easiest to work with.
