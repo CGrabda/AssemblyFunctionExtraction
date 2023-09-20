@@ -46,7 +46,23 @@ python example.py
 The goal is to extract disassembled functions from PE executables. We'll want a pure function that takes a file as input and returns disassembled functions, along with their locations in the binary, e.g.,
 
 ```python
-def extract_functions_from_binary(file: Path) -> list[tuple[str, int, int]]:
+
+from dataclasses import dataclass
+
+
+@dataclass(frozen=True)
+class Function:
+    """
+    Crucial information from each function.
+
+    # TODO: include any information that may be useful.
+    """
+    instructions: list[str]
+    lower_offset: int
+    upper_offset: int
+
+
+def extract_functions_from_binary(file: Path) -> list[Function]:
     """
     Extract disassembled functions and their locations from a PE binary.
 
@@ -54,8 +70,7 @@ def extract_functions_from_binary(file: Path) -> list[tuple[str, int, int]]:
         file: file to extract from
 
     Returns:
-        for each function, its disassembly, the offset in the binary at
-            which the function begins, and the offset at which it ends.
+        information about each function in the file
     """
     ...
 ```
