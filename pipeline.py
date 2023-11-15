@@ -40,7 +40,7 @@ import warnings
 
 import r2pipe
 from tqdm import tqdm
-from tokenizers import normalizers, Regex
+from json import loads
 
 from cfg import (
     UPX,
@@ -60,101 +60,81 @@ WARNS = [
 ]
 
 
-NORMALIZER = normalizers.Sequence(
-    [
-        normalizers.Replace(Regex(rx), rp)
-        for rx, rp in [
-            (r"^┌.*\n", ""),
-            (r"^├.*\n", ""),
-            (r"└", "│"),
-            (r"^\|.*(?:\n|$)", ""),
-            (r";.*", ""),
-            (r"│ ", ""),
-            (r"\n{2,}", "\n"),
-            (r"^.{31}", ""),
-            ("\n\n", "\n"),
-        ]
-    ]
-)
+#(r"^┌.*\n", ""),
+#(r"^├.*\n", ""),
+#(r"└", "│"),
+#(r"^\|.*(?:\n|$)", ""),
+#(r";.*", ""),
+#(r"│ ", ""),
+#(r"\n{2,}", "\n"),
+#(r"^.{31}", ""),
+#("\n\n", "\n"),
 
 
-class PDRParser:
-    """
-    Iterate over a binary's functions using r2's pdr command.
-    """
-    def __init__(self, f: Path):
-        self.idx = 0
-        r2 = r2pipe.open(f.as_posix())
-        r2.cmd("aaaa")
-        self.output = r2.cmd("pdr @@f").split("\n")
 
-    def __iter__(self) -> PDRParser:
-        return self
+def disassemble(f: Path, disassembled):
+    # Initialize radare2
+    r2 = r2pipe.open(f.as_posix())
 
-    def __len__(self):
-        return len(self.output)
+    # Analyze all basic blocks
+    r2.cmd("aab")
 
-    def __next__(self):
-        if self.idx == len(self):
-            raise StopIteration
-        func = []
-        add = False
-        look_for_start = False
-        start = None
-        end = None
-        while self.idx < len(self):
-            line = self.output[self.idx]
-            self.idx += 1
-            if not line:
-                continue
-            if look_for_start and start is None:
-                try:
-                    start = int(self._extract_address(line), 16)
-                    look_for_start = False
-                except ValueError:
-                    start = None
-            if self._indicates_end(line) and start:
-                try:
-                    end = int(self._extract_address(line), 16)
-                except ValueError:
-                    end = None
-                if not self._indicates_start(line):
-                    func.append(line)
-                else:
-                    self.idx -= 1
-                return start, end, func
-            if self._indicates_start(line):
-                if add:
-                    try:
-                        end = int(self._extract_address(line), 16)
-                    except ValueError:
-                        end = None
-                    self.idx -= 1
-                    return start, end, func
-                add = True
-                look_for_start = True
-                start = None
-            if add:
-                func.append(line)
-        if func:
-            return start, end, func
-        raise StopIteration
+    # Analyze all functions
+    r2.cmd("aac")
 
-    @staticmethod
-    def _extract_address(line: str) -> str:
-        return line[2:13]
+    # Get radare2 output as text
+    disassembly = r2.cmd("pdr @@f")
+    r2.quit()
 
-    @staticmethod
-    def _indicates_end(line: str) -> bool:
-        if line[0] in ("└", "┌", "├"):
-            return True
-        return False
+    
+    output = ""
 
-    @staticmethod
-    def _indicates_start(line: str) -> bool:
-        if line[0] in ("┌", "├"):
-            return True
-        return False
+    # Group all functions using regex
+    # 
+    # Identifies 2 or more lines of repeated code (| or │ character at start of line with assembly)
+    # followed or not followed by the end of a function (└ character at start of line with assembly)
+    # and captures the entire group
+    assemblyFunctions = re.findall("((?:(?:│|\|).+\n){2,}(?:└.+\n){1})", disassembly)
+    
+    # Iterate over each function
+    for func in assemblyFunctions:
+        addresses = ""
+        rawBytes = ""
+        startAddressFound = False
+
+        # Splits the function into each instruction
+        instructions = func.split("\n")
+
+
+        
+        # Loop over each instruction
+        for i in range(len(instructions)):
+            # Split the line into its parts
+            tokens = instructions[i].split()
+
+            # Filters out comments
+            # R2 comments use a different | character to start the line or are an assembly comment ; 
+            if len(tokens) > 0 and tokens[0] != "|" and tokens[1][0] != ";" and tokens[1][-1] != ":":
+                if not startAddressFound:
+                    addresses += tokens[1] + " "
+                    startAddressFound = True
+
+                # If end of function, add address to output
+                elif tokens[0] == "└":
+                    addresses += tokens[1] + "\n"
+                
+                # Add instruction raw bytes
+                rawBytes += tokens[2] + "\n"
+
+        # Combine raw bytes and output
+        output += addresses
+        output += rawBytes + "\n"
+
+    print(output)
+
+    return output
+        
+    
 
 
 def _process_text(text: str) -> str:
@@ -195,64 +175,6 @@ def merge(d: Path, dest_path: Path) -> Path:
         handle.write(f"{'-'*42}\n".join(data))
     shutil.rmtree(d, ignore_errors=True)
     return out_file
-
-
-def normalize(f: Path, dest_path: Path) -> Path:
-    """
-    A preliminary normalization stage to remove r2 residuals.
-    
-    Args:
-     f: the file to process
-     dest_path: directory to dump new file in
-    
-    Returns:
-     the new file
-    """
-    d_out = dest_path / f.parent.name
-    d_out.mkdir(exist_ok=True)
-    f_out = d_out / f.name
-    with open(f) as handle:
-        out_str = NORMALIZER.normalize_str(handle.read())
-    out_str = out_str.lstrip().rstrip() + "\n"
-    with open(f_out, "w") as handle:
-        handle.write(out_str)
-    f.unlink()
-    return f_out
-
-
-def disassemble(f: Path, dest_path: Path) -> list[Path]:
-    """
-    Disassemble the functions of a binary into several individual asm files.
-
-    Each asm file is named according to the start and end of the corresponding
-     function's virtual addresses. All asm files are placed in a new directory
-     named after the file to be disassembled.
-
-    Args:
-     f: the file to process
-     dest_path: directory to dump disassembled functions
-
-    Returns:
-     files of disassembled functions
-    """
-    outpath = dest_path / f.stem
-    if outpath.exists():
-        return []
-    outpath.mkdir()
-    parser = PDRParser(f)
-    for i, (start, end, func) in enumerate(parser):
-        f_out = outpath / f"{start}_{end}.asm"
-        if f_out.exists():
-            warnings.warn(f"{WARNS[0][0]} @{i=} {f=}")
-            if WARNS[0][1]:
-                continue
-        if start is None or end is None:
-            warnings.warn(f"{WARNS[1][0]} @{i=} {f=}")
-            if WARNS[1][1]:
-                continue
-        with open(f_out, "w") as handle:
-            handle.write("\n".join(func))
-    return list(outpath.iterdir())
 
 
 def filter_(
@@ -346,8 +268,6 @@ def run(file: Path) -> None:
     if r != 0:
         sys.exit(r)
     files = disassemble(file, DISASSEMBLED)
-    for f in files:
-        normalize(f, NORMALIZED)
     merge(NORMALIZED / file.stem, MERGED)
 
 
