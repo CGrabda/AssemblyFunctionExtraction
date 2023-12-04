@@ -86,8 +86,6 @@ def disassemble(f: Path, disassembled):
     disassembly = r2.cmd("pdr @@f")
     r2.quit()
 
-    
-    output = ""
 
     # Group all functions using regex
     # 
@@ -98,9 +96,9 @@ def disassemble(f: Path, disassembled):
     
     # Iterate over each function
     for func in assemblyFunctions:
-        addresses = ""
-        rawBytes = ""
-        startAddressFound = False
+        bytesList = []
+        offsetList = []
+        bytesLengthList = []
 
         # Splits the function into each instruction
         instructions = func.split("\n")
@@ -115,24 +113,20 @@ def disassemble(f: Path, disassembled):
             # Filters out comments
             # R2 comments use a different | character to start the line or are an assembly comment ; 
             if len(tokens) > 0 and tokens[0] != "|" and tokens[1][0] != ";" and tokens[1][-1] != ":":
-                if not startAddressFound:
-                    addresses += tokens[1] + " "
-                    startAddressFound = True
-
-                # If end of function, add address to output
-                elif tokens[0] == "└":
-                    addresses += tokens[1] + "\n"
+                # Add offset to offset list
+                offsetList.append(tokens[1])
                 
-                # Add instruction raw bytes
-                rawBytes += tokens[2] + "\n"
+                # Add instruction raw bytes to the bytes list
+                # figure out what . character means
+                # ------Convert from string to hex representation int(tokens[2], 16)
+                bytesList.append(tokens[2])
 
-        # Combine raw bytes and output
-        output += addresses
-        output += rawBytes + "\n"
+                # Add the length of the instruction to the byte length list
+                bytesLengthList.append(len(tokens[2]))
 
-    print(output)
+    print(offsetList, bytesList, bytesLengthList)
 
-    return output
+    return (offsetList, bytesList, bytesLengthList)
         
     
 
