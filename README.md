@@ -60,8 +60,8 @@ class Function:
     # TODO: include any information that may be useful.
     """
     instructions: list[str]
-    lower_offset: int
-    upper_offset: int
+    offsets: list[int]
+    upper_offsets: list[int]
 
 
 def extract_functions_from_binary(file: Path) -> list[Function]:
