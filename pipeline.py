@@ -93,12 +93,16 @@ def disassemble(f: Path, disassembled):
     # followed or not followed by the end of a function (└ character at start of line with assembly)
     # and captures the entire group
     assemblyFunctions = re.findall("((?:(?:│|\|).+\n){2,}(?:└.+\n){1})", disassembly)
+    parsedFunctions = []
+
     
     # Iterate over each function
     for func in assemblyFunctions:
         bytesList = []
         offsetList = []
+        disassemblyList = []
         bytesLengthList = []
+        argumentList = []
 
         # Splits the function into each instruction
         instructions = func.split("\n")
@@ -121,12 +125,19 @@ def disassemble(f: Path, disassembled):
                 # ------Convert from string to hex representation int(tokens[2], 16)
                 bytesList.append(tokens[2])
 
+                # Add readable disassembly to disassembly list
+                disassemblyList.append(tokens[3:])
+
                 # Add the length of the instruction to the byte length list
                 bytesLengthList.append(len(tokens[2]))
+            elif instructions[i][:7] == "│ ; arg":
+                # Split args into tokens
+                argumentList.append(instructions[i].split(" "))
 
-    print(offsetList, bytesList, bytesLengthList)
+            # Adds functions details to parsed functions list as a tuple
+            parsedFunctions.append((offsetList, bytesList, disassemblyList, bytesLengthList, argumentList))
 
-    return (offsetList, bytesList, bytesLengthList)
+    return parsedFunctions
         
     
 
