@@ -72,7 +72,16 @@ WARNS = [
 
 
 
-def disassemble(f: Path, disassembled):
+def disassemble(f: Path, disassembled) -> list[tuple[list, list, list, list, list]]:
+    """
+    Returns: list of tuples containing information associated with each function. 
+        0 offsets to the beginning of each instruction in the function
+        1 bytes of the instructions
+        2 disassembly of the instructions
+        3 length of each instruction
+        4 arguments to the function
+    """
+
     # Initialize radare2
     r2 = r2pipe.open(f.as_posix())
 
